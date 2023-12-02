@@ -510,6 +510,9 @@ static int parse_section_debug_info(elf& elf, elf_section_int& section)
 	uint8_t unit_type = 0xff;
 	uint8_t address_size = 0;
 	uint64_t debug_abbrev_offset = 0;
+	(void) unit_length;
+	(void) unit_type;
+	(void) address_size;
 
 	if (dwarf_version <= 4)
 	{
@@ -523,6 +526,7 @@ static int parse_section_debug_info(elf& elf, elf_section_int& section)
 		address_size = eread.readU8();
 		debug_abbrev_offset = eread.readU32or64(is64Bit);
 	}
+	(void) debug_abbrev_offset;
 	return 0;
 }
 
@@ -556,6 +560,8 @@ static int parse_section_debug_line(elf_results& output,
 			address_size = eread.readU8();
 		if (line_number_version >= 5)
 			segment_selector_size = eread.readU8();
+		(void)address_size;
+		(void)segment_selector_size;
 
 		// This varies with 32/64 bit formats
 		uint64_t header_length = eread.readU32or64(is64bit);
@@ -567,6 +573,9 @@ static int parse_section_debug_line(elf_results& output,
 		int8_t line_base = (int8_t)eread.readU8();
 		uint8_t line_range = eread.readU8();
 		uint8_t opcode_base = eread.readU8();
+		// Suppress unused warnings
+		(void) header_length;
+		(void) maximum_operations_per_instruction;
 
 		output.line_info_units.push_back(compilation_unit());
 		compilation_unit& compilation_unit = output.line_info_units.back();
@@ -576,6 +585,7 @@ static int parse_section_debug_line(elf_results& output,
 		{
 			uint8_t length = eread.readU8();
 			PRINTF(("\topcode %u has %u args\n", i, length));
+			(void) length;
 		}
 
 		compilation_unit.dirs.push_back(".");
@@ -620,7 +630,9 @@ static int parse_section_debug_line(elf_results& output,
 				// Copy out the necessary bits
 				compilation_unit::file file;
 				file.dir_index = cl.directory_index;
-				file.filename = cl.path;
+				file.path = cl.path;
+				file.length = 0;
+				file.timestamp = 0;
 				compilation_unit.files.push_back(file);
 			}
 		}
@@ -637,8 +649,10 @@ static int parse_section_debug_line(elf_results& output,
 
 			{
 				compilation_unit::file f;
-				f.filename = "NONE";
+				f.path = "NONE";
 				f.dir_index = 0;
+				f.length = 0;
+				f.timestamp = 0;
 				compilation_unit.files.push_back(f);
 			}
 			while (1)
@@ -647,13 +661,12 @@ static int parse_section_debug_line(elf_results& output,
 				if (file_name.size() == 0)
 					break;
 
-				uint64_t dir_index = eread.readULEB128();
-				uint64_t file_timestamp = eread.readULEB128();
-				uint64_t file_length = eread.readULEB128();
-
 				compilation_unit::file f;
-				f.filename = file_name;
-				f.dir_index = dir_index;
+				f.dir_index = eread.readULEB128();
+				f.timestamp = eread.readULEB128();
+				f.length = eread.readULEB128();
+				f.path = file_name;
+
 				compilation_unit.files.push_back(f);
 			}
 		}
@@ -677,7 +690,6 @@ static int parse_section_debug_line(elf_results& output,
 				return ERROR_READ_FILE;
 
 			assert(eread.get_pos() < unit_end_pos);
-			uint64_t debug_pos = eread.get_pos() - section.sh_offset;
 			uint8_t opcode0 = eread.readU8();
 			PRINTF(("--- pos: 0x%x opcode0: %x\n", debug_pos, opcode0));
 			if (opcode0 == 0)
@@ -685,6 +697,7 @@ static int parse_section_debug_line(elf_results& output,
 				// Extended opcode
 				uint64_t length = eread.readULEB128();
 				PRINTF(("length: %x\n", length));
+				(void)length;		// should we use this for correctness checking?
 
 				uint8_t extended_opcode = eread.readU8();
 				PRINTF(("extended_opcode: %x\n", extended_opcode));
@@ -707,12 +720,12 @@ static int parse_section_debug_line(elf_results& output,
 					PRINTF(("DW_LNE_define_file\n"));
 					compilation_unit::file f;
 					uint64_t dir_index = eread.readULEB128();
-					uint64_t mod_ts = eread.readULEB128();
-					uint64_t length = eread.readULEB128();
-					f.filename = eread.read_null_term_string();
+					f.timestamp = eread.readULEB128();
+					f.length = eread.readULEB128();
+					f.path = eread.read_null_term_string();
 					f.dir_index = dir_index;
 					PRINTF(("New file: \"%s\" dir_index: %x mod_ts: %x length: %x\n",
-						f.filename, dir_index, mod_ts, length));
+						f.filename, f.dir_index, f.timestamp, f.length));
 					compilation_unit.files.push_back(f);
 				}
 				else if (extended_opcode == DW_LNE_set_discriminator)
@@ -820,7 +833,6 @@ template <typename ELF_SYMBOL>
 static int parse_section_symbol(elf_results& output, 
 	elf& elf, const elf_section_int& section)
 {
-	uint8_t data_mode = elf.ident.ei_data;		// LSB or MSB
 	uint8_t data_class = elf.ident.ei_class;	// 32 bit or 64 bit
 	int ret = OK;
 	// Load the necessary chunks:
@@ -832,7 +844,6 @@ static int parse_section_symbol(elf_results& output,
 	ret = elf.load_section(section.sh_link);
 	CHECK_RET(ret)
 
-	elf_section_int& symbol_string_section = elf.sections[section.sh_link];
 	const elf_section_int& symbol_section = section;
 	buffer_access sym_buffer = symbol_section.chunk.buffer;
 	sym_buffer.set(0);
@@ -850,8 +861,6 @@ static int parse_section_symbol(elf_results& output,
 
 		name_read.set(sym.st_name);
 		sym.name = name_read.read_null_term_string();
-
-		const char* section_name = "?";
 		if (sym.st_shndx < elf.e_shnum)
 		{
 			const elf_section_int& ref_section = elf.sections[sym.st_shndx];
@@ -911,11 +920,9 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 		if (elf_data.ident.ei_magic[i] != magic[i])
 			return ERROR_HEADER_MAGIC_FAIL;
 
-	uint8_t data_mode = elf_data.ident.ei_data;		// LSB or MSB
 	uint8_t data_class = elf_data.ident.ei_class;	// 32 bit or 64 bit
 
 	// Read main ELF header variants
-	size_t header_size = 0;
 	if (data_class == ELFCLASS32)
 		ret = read_elf_header<Elf32_Ehdr>(elf_data, file);
 	else if (data_class == ELFCLASS64)

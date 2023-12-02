@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 		for (const auto file : unit.files)
 		{
 			printf("\tfile %s/%s\n",
-				unit.dirs[file.dir_index].c_str(), file.filename.c_str());
+				unit.dirs[file.dir_index].c_str(), file.path.c_str());
 		}
 		for (const auto& cp : unit.points)
 		{
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 			printf("\t\tAddress: %lx File: \"%s/%s\" Line: %d Col: %u\n", 
 				cp.address,
 				unit.dirs[file.dir_index].c_str(),
-				file.filename.c_str(),
+				file.path.c_str(),
 				cp.line, cp.column);
 		}
 	}

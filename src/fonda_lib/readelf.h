@@ -22,7 +22,9 @@ struct compilation_unit
 	struct file
 	{
 		size_t dir_index;		// index in dirs
-		std::string filename;
+		uint64_t timestamp;
+		uint64_t length;
+		std::string path;
 	};
 
 	std::vector<std::string> dirs;
