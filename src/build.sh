@@ -2,7 +2,7 @@
 SRC_PATH=.
 CC=g++
 LD=g++
-CFLAGS="-DDEBUG -I${SRC_PATH}/lib -std=c++11 -g -O0"
+CFLAGS="-DDEBUG -I${SRC_PATH}/lib -std=c++11 -g -O0 -Wall"
 LDFLAGS="-lc"
 
 # Just build everything -- this project isn't big
