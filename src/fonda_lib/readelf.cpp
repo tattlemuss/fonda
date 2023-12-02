@@ -857,9 +857,9 @@ static int parse_section_symbol(elf_results& output,
 			const elf_section_int& ref_section = elf.sections[sym.st_shndx];
 			sym.section_type = ref_section.name_string;
 		}
-		else if (sym.st_shndx = SHN_ABS)
+		else if (sym.st_shndx == SHN_ABS)
 			sym.section_type = "ABS";
-		else if (sym.st_shndx = SHN_COMMON)
+		else if (sym.st_shndx == SHN_COMMON)
 			sym.section_type = "COMMON";
 
 		output.symbols.push_back(sym);
