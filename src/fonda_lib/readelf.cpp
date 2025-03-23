@@ -6,8 +6,12 @@
 #include "elf_struct.h"
 #include "buffer_access.h"
 
+#if 1
 #define PRINTF(x)		(void)(0)
-//#define PRINTF(x)		printf x
+#else
+#define PRINTF(x)		printf x
+#endif
+
 #define CHECK_RET(ret)	if ((ret)) return (ret);
 
 namespace fonda
@@ -613,6 +617,8 @@ static int parse_section_debug_line(elf_results& output,
 			if (eread.errored())
 				return ERROR_READ_FILE;
 
+			uint64_t debug_pos = eread.get_pos();
+			(void) debug_pos;	 // suppress unused variable warning
 			assert(eread.get_pos() < unit_end_pos);
 			uint8_t opcode0 = eread.readU8();
 			PRINTF(("--- pos: 0x%x opcode0: %x\n", debug_pos, opcode0));
@@ -649,7 +655,7 @@ static int parse_section_debug_line(elf_results& output,
 					f.path = eread.read_null_term_string();
 					f.dir_index = dir_index;
 					PRINTF(("New file: \"%s\" dir_index: %x mod_ts: %x length: %x\n",
-						f.filename, f.dir_index, f.timestamp, f.length));
+						f.path, f.dir_index, f.timestamp, f.length));
 					compilation_unit.files.push_back(f);
 				}
 				else if (extended_opcode == DW_LNE_set_discriminator)
