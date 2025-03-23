@@ -61,21 +61,21 @@ int main(int argc, char** argv)
 
 	// Dump output
 	printf("\n==== SECTION INFORMATION ===\n\n");
-	for (const auto& s : results.sections)
+	for (const fonda::elf_section& s : results.sections)
 	{
 		printf("[%03d] [%20s] [%08lx] [%08lx] [type: %08x] [addr:%08lx]\n", s.section_id, s.name_string.c_str(),
 			s.offset, s.size, s.type, s.addr);
 	}
 
 	printf("\n\n==== LINE INFORMATION ===\n\n");
-	for (const auto& unit : results.line_info_units)
+	for (const fonda::compilation_unit& unit : results.line_info_units)
 	{
-		for (const auto file : unit.files)
+		for (const fonda::compilation_unit::file& file : unit.files)
 		{
 			printf("\tfile %s/%s\n",
 				unit.dirs[file.dir_index].c_str(), file.path.c_str());
 		}
-		for (const auto& cp : unit.points)
+		for (const fonda::code_point& cp : unit.points)
 		{
 			const fonda::compilation_unit::file& file = unit.files[cp.file_index];
 			printf("\t\tAddress: %lx File: \"%s/%s\" Line: %d Col: %u\n", 
@@ -87,8 +87,8 @@ int main(int argc, char** argv)
 	}
 
 	printf("\n\n==== SYMBOL INFORMATION ===\n\n");
-	for (const auto& sym : results.symbols)
-		printf("Symbol: %08lx (size: %08lx) binding=%x type=%x section=(%d, name %s) \"%s\"\n",  
+	for (const fonda::elf_symbol& sym : results.symbols)
+		printf("Symbol: %08lx (size: %08lx) binding=%x type=%x section=(%d, name %s) \"%s\"\n",
 					sym.st_value, sym.st_size, sym.st_other >> 4, sym.st_other & 0xf,
 					sym.st_shndx, sym.section_type.c_str(), sym.name.c_str());
 	return ret;
