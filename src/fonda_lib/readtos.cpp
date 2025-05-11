@@ -340,7 +340,8 @@ static int read_reloc(buffer_reader& buf, compilation_unit& cu)
 				read_debug_hcln_info(hunk_buffer, cu, offset);
 				break;
 			default:
-				return tos_error::ERROR_READ_EOF;
+				// For the moment, skip unknown chunks rather than error.
+				break;
 		}
 
 		// Jump to next hunk
