@@ -12,18 +12,21 @@ struct tos_results
 };
 
 // ----------------------------------------------------------------------------
-enum tos_error
+namespace tos_error
 {
-	TOS_OK = 0,
-	READ_EOF = 1,						// Unable to read data before EOF
-	HEADER_MAGIC_FAIL = 2,				// Missing "ELF" signature
-	ALLOC_FAIL = 3,						// Can't allocate file data
-	FILE_READ_FAIL = 4,					// Can't read from FILE*
-	SECTION_OVERFLOW = 5				// Stated size of section is bigger than file data
-};
+	enum
+	{
+		TOS_OK = 0,
+		ERROR_READ_EOF = 1,					// Unable to read data before EOF
+		ERROR_HEADER_MAGIC = 2,				// Missing "ELF" signature
+		ERROR_ALLOC_FAIL = 3,				// Can't allocate file data
+		ERROR_FILE_READ = 4,				// Can't read from FILE*
+		ERROR_SECTION_OVERFLOW = 5			// Stated size of section is bigger than file data
+	};
+}
 
 // ----------------------------------------------------------------------------
-extern tos_error process_tos_file(FILE* file, tos_results& output);
+extern int process_tos_file(FILE* file, tos_results& output);
 
 }
 #endif // FONDA_LIB_READTOS_H

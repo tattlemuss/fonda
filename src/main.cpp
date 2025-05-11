@@ -61,9 +61,9 @@ int elf_file(FILE* pFile)
 int tos_file(FILE* pFile)
 {
 	fonda::tos_results results;
-	fonda::tos_error ret = process_tos_file(pFile, results);
+	int ret = process_tos_file(pFile, results);
 	if (ret != fonda::tos_error::TOS_OK)
-		return (int)ret;
+		return ret;
 
 	// Dump output
 	printf("\n\n==== LINE INFORMATION ===\n\n");

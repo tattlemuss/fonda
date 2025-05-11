@@ -8,7 +8,7 @@
 
 #define PRINTF(x)		(void)(0)
 //#define PRINTF(x)		printf x
-#define CHECK_RET(ret)	if ((ret)) return (ret);
+#define CHECK_RET(ret)	if ((ret != elf_error::OK)) return (ret);
 
 namespace fonda
 {
@@ -17,7 +17,7 @@ template <typename T>
 	static int read_file(FILE* file, T& output)
 	{
 		int bytes = fread(&output, 1, sizeof(T), file);
-		return bytes == sizeof(T) ? 0 : ERROR_READ_FILE;
+		return bytes == sizeof(T) ? elf_error::OK : elf_error::ERROR_READ_FILE;
 	}
 
 // ----------------------------------------------------------------------------
@@ -141,10 +141,10 @@ struct loaded_chunk
 		if (bytes != size)
 		{
 			reset();	// free bytes
-			return ERROR_READ_FILE;
+			return elf_error::ERROR_READ_FILE;
 		}
 		buffer = buffer_access(data, size);
-		return 0;
+		return elf_error::OK;
 	}
 
 	uint8_t*		  data;
@@ -374,13 +374,12 @@ struct line_state_machine
 int elf::load_section(size_t section_num)
 {
 	if (section_num >= this->e_shnum)
-		return ERROR_INVALID_SECTION;
-	int ret = 0;
+		return elf_error::ERROR_INVALID_SECTION;
 	elf_section_int& section = sections[section_num];
 	if (section.is_loaded)
-		return 0;
-	ret = section.chunk.load(file, section.sh_offset, section.sh_size);
-	if (ret == 0)
+		return elf_error::OK;
+	int ret = section.chunk.load(file, section.sh_offset, section.sh_size);
+	if (ret == elf_error::OK)
 		section.is_loaded = true;
 	return ret;
 }
@@ -455,7 +454,7 @@ int read_content_line(content_line& content, element_reader& eread, elf& elf_dat
 					case DW_FORM_data1:	content.directory_index = eread.readU8(); continue;
 					case DW_FORM_data2:	content.directory_index = eread.readU16(); continue;
 					case DW_FORM_udata:	content.directory_index = eread.readULEB128(); continue;
-					default: return ERROR_DWARF_UNKNOWN_CONTENT_FORM;
+					default: return elf_error::ERROR_DWARF_UNKNOWN_CONTENT_FORM;
 				}
 				break;
 			}
@@ -478,15 +477,15 @@ int read_content_line(content_line& content, element_reader& eread, elf& elf_dat
 					//	offset = eread.readU32or64(is64Bit);
 					//	content.path = ReadDebugString(elf_data, ".debug_line_str", offset);
 					//	continue;
-					default: return ERROR_DWARF_UNKNOWN_CONTENT_FORM;
+					default: return elf_error::ERROR_DWARF_UNKNOWN_CONTENT_FORM;
 				}
 				break;
 			}
 			default:
-				return ERROR_DWARF_UNKNOWN_CONTENT_TYPE;
+				return elf_error::ERROR_DWARF_UNKNOWN_CONTENT_TYPE;
 		}
 	}
-	return OK;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -527,7 +526,7 @@ static int parse_section_debug_info(elf& elf, elf_section_int& section)
 		debug_abbrev_offset = eread.readU32or64(is64Bit);
 	}
 	(void) debug_abbrev_offset;
-	return 0;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -542,7 +541,7 @@ static int parse_section_debug_line(elf_results& output,
 	while (1)
 	{
 		if (eread.get_pos() > section_end_pos)
-			return ERROR_DWARF_DEBUGLINE_PARSE;
+			return elf_error::ERROR_DWARF_DEBUGLINE_PARSE;
 
 		if (eread.get_pos() == section_end_pos)
 			break;
@@ -671,7 +670,7 @@ static int parse_section_debug_line(elf_results& output,
 			}
 		}
 		if (eread.errored())
-			return ERROR_READ_FILE;		
+			return elf_error::ERROR_READ_FILE;		
 
 		// Now the compilation units
 		line_state_machine sm;
@@ -683,11 +682,11 @@ static int parse_section_debug_line(elf_results& output,
 		{
 			assert(sm.line >= 1);
 			if (eread.get_pos() > unit_end_pos)
-				return ERROR_DWARF_DEBUGLINE_PARSE;
+				return elf_error::ERROR_DWARF_DEBUGLINE_PARSE;
 			if (eread.get_pos() == unit_end_pos)
 				break;
 			if (eread.errored())
-				return ERROR_READ_FILE;
+				return elf_error::ERROR_READ_FILE;
 
 			assert(eread.get_pos() < unit_end_pos);
 			uint8_t opcode0 = eread.readU8();
@@ -737,7 +736,7 @@ static int parse_section_debug_line(elf_results& output,
 				{
 					printf("unknown extended_opcode\n");
 					printf("extended_opcode: %x\n", extended_opcode);
-					return ERROR_DWARF_UNKNOWN_EXTENDED_OPCODE;
+					return elf_error::ERROR_DWARF_UNKNOWN_EXTENDED_OPCODE;
 				}
 			}
 			else if (opcode0 == DW_LNS_advance_pc)
@@ -803,11 +802,11 @@ static int parse_section_debug_line(elf_results& output,
 			{
 				printf("unknown opcode\n");
 				printf("opcode0: %x\n", opcode0);
-				return ERROR_DWARF_UNKNOWN_OPCODE;
+				return elf_error::ERROR_DWARF_UNKNOWN_OPCODE;
 			}
 		}
 	}
-	return 0;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -817,7 +816,7 @@ template <typename ELF_SYMBOL>
 {
 	ELF_SYMBOL file_sym;
 	if (buffer.read(file_sym) != 0)
-		return ERROR_READ_FILE;
+		return elf_error::ERROR_READ_FILE;
 
 	uint8_t mode = elf_data.ident.ei_data;
 	symbol.st_name       = conv_endian(file_sym.st_name, mode);
@@ -826,7 +825,7 @@ template <typename ELF_SYMBOL>
 	symbol.st_info       = conv_endian(file_sym.st_info, mode);
 	symbol.st_other      = conv_endian(file_sym.st_other, mode);
 	symbol.st_shndx      = conv_endian(file_sym.st_shndx, mode);
-	return OK;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -834,7 +833,7 @@ static int parse_section_symbol(elf_results& output,
 	elf& elf, const elf_section_int& section)
 {
 	uint8_t data_class = elf.ident.ei_class;	// 32 bit or 64 bit
-	int ret = OK;
+	int ret = elf_error::OK;
 	// Load the necessary chunks:
 	// the symbol section...
 	ret = elf.load_section(section.section_id);
@@ -873,7 +872,7 @@ static int parse_section_symbol(elf_results& output,
 
 		output.symbols.push_back(sym);
 	}
-	return OK;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -883,7 +882,7 @@ template <typename ELF_FILE_HEADER>
 {
 	ELF_FILE_HEADER hdr;
 	if (read_file(file, hdr) != 0)
-		return ERROR_READ_FILE;
+		return elf_error::ERROR_READ_FILE;
 
 	uint8_t mode = elf_data.ident.ei_data;
 	elf_data.e_type 	 = conv_endian(hdr.e_type, mode);
@@ -899,7 +898,7 @@ template <typename ELF_FILE_HEADER>
 	elf_data.e_shentsize = conv_endian(hdr.e_shentsize, mode);
 	elf_data.e_shnum	 = conv_endian(hdr.e_shnum, mode);
 	elf_data.e_shstrndx	 = conv_endian(hdr.e_shstrndx, mode);
-	return OK;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -918,7 +917,7 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 	static char magic[4] = { 0x7f, 'E', 'L', 'F'};
 	for (size_t i = 0; i < 4; ++i)
 		if (elf_data.ident.ei_magic[i] != magic[i])
-			return ERROR_HEADER_MAGIC_FAIL;
+			return elf_error::ERROR_HEADER_MAGIC_FAIL;
 
 	uint8_t data_class = elf_data.ident.ei_class;	// 32 bit or 64 bit
 
@@ -928,15 +927,16 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 	else if (data_class == ELFCLASS64)
 		ret = read_elf_header<Elf64_Ehdr>(elf_data, file);
 	else
-		return ERROR_UNKNOWN_CLASS;
+		return elf_error::ERROR_UNKNOWN_CLASS;
 
 	if (elf_data.e_version != EV_CURRENT)
-		return ERROR_ELF_VERSION;
+		return elf_error::ERROR_ELF_VERSION;
 
 	// Load the section header data itself, into a custom block
 	loaded_chunk entries_chunk;
-	if (entries_chunk.load(file, elf_data.e_shoff, elf_data.e_shnum * elf_data.e_shentsize) != 0)
-		return 3;
+	ret = entries_chunk.load(file, elf_data.e_shoff, elf_data.e_shnum * elf_data.e_shentsize);
+	CHECK_RET(ret);
+
 	// Create a reader for the section headers
 	element_reader sh_reader(entries_chunk.buffer, elf_data.ident.ei_data, elf_data.ident.ei_class);
 
@@ -957,12 +957,12 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 		s.sh_entsize    = sh_reader.readAddress();
 		s.section_id	= sectionId;
 		if (sh_reader.errored())
-			return 3;
+			return elf_error::ERROR_READ_FILE;
 	}
 
 	// Load the section with the section's name strings in
-	if (elf_data.load_section(elf_data.e_shstrndx) != 0)
-		return -5;
+	ret = elf_data.load_section(elf_data.e_shstrndx);
+	CHECK_RET(ret);
 
 	// Now read the section names
 	element_reader name_reader = elf_data.create_reader(elf_data.e_shstrndx);
@@ -975,7 +975,7 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 		std::string section_name = name_reader.read_null_term_string();
 		s.name_string = section_name;
 		if (name_reader.errored())
-			return ERROR_READ_FILE;
+			return elf_error::ERROR_READ_FILE;
 
 		// Copy to results now the name is known.
 		elf_section result_sec = {};
@@ -992,14 +992,14 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 	elf_section_int* debug_info_section = load_named_section(elf_data, ".debug_info");
 	if (debug_info_section)
 	{
-		int ret = parse_section_debug_info(elf_data, *debug_info_section);
+		ret = parse_section_debug_info(elf_data, *debug_info_section);
 		CHECK_RET(ret);
 	}
 
 	const elf_section_int* debug_line_section = load_named_section(elf_data, ".debug_line");
 	if (debug_line_section)
 	{
-		int ret = parse_section_debug_line(output, elf_data, *debug_line_section);
+		ret = parse_section_debug_line(output, elf_data, *debug_line_section);
 		CHECK_RET(ret);
 	}
 
@@ -1013,7 +1013,7 @@ static int process_elf_file_internal(elf& elf_data, FILE* file, elf_results& out
 			CHECK_RET(ret);
 		}
 	}
-	return OK;
+	return elf_error::OK;
 }
 
 // ----------------------------------------------------------------------------

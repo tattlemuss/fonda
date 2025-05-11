@@ -43,21 +43,24 @@ struct elf_results
 };
 
 // ----------------------------------------------------------------------------
-enum
+namespace elf_error
 {
-	OK = 0,
-	ERROR_READ_FILE = 1,						// Unable to read data from file
-	ERROR_HEADER_MAGIC_FAIL = 2,				// Missing "ELF" signature
-	ERROR_ELF_VERSION = 3,						// Unsupported version number
-	ERROR_UNKNOWN_CLASS = 4,					// Neither LSB or MSB mode in header
-	ERROR_INVALID_SECTION = 5,					// Tried to access an invalid section number
+	enum
+	{
+		OK = 0,
+		ERROR_READ_FILE = 1,						// Unable to read data from file
+		ERROR_HEADER_MAGIC_FAIL = 2,				// Missing "ELF" signature
+		ERROR_ELF_VERSION = 3,						// Unsupported version number
+		ERROR_UNKNOWN_CLASS = 4,					// Neither LSB or MSB mode in header
+		ERROR_INVALID_SECTION = 5,					// Tried to access an invalid section number
 
-	ERROR_DWARF_UNKNOWN_OPCODE = 1000,			// Dwarf main opcode not recognised
-	ERROR_DWARF_UNKNOWN_EXTENDED_OPCODE = 1001,	// Dwarf extended opcode not recognised
-	ERROR_DWARF_DEBUGLINE_PARSE = 1002,			// Over-read expected bounds of .debug_line data
-	ERROR_DWARF_UNKNOWN_CONTENT_FORM = 1003,	// One of DW_FORM not supported
-	ERROR_DWARF_UNKNOWN_CONTENT_TYPE = 1004,	// One of DW_TYPE not supported
-};
+		ERROR_DWARF_UNKNOWN_OPCODE = 1000,			// Dwarf main opcode not recognised
+		ERROR_DWARF_UNKNOWN_EXTENDED_OPCODE = 1001,	// Dwarf extended opcode not recognised
+		ERROR_DWARF_DEBUGLINE_PARSE = 1002,			// Over-read expected bounds of .debug_line data
+		ERROR_DWARF_UNKNOWN_CONTENT_FORM = 1003,	// One of DW_FORM not supported
+		ERROR_DWARF_UNKNOWN_CONTENT_TYPE = 1004,	// One of DW_TYPE not supported
+	};
+}
 
 // ----------------------------------------------------------------------------
 extern int process_elf_file(FILE* file, elf_results& output);
