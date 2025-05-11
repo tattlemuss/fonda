@@ -20,7 +20,7 @@ public:
 		if (m_pos + 1 > m_length)
 			return tos_error::ERROR_READ_EOF;
 		data = m_pData[m_pos++];
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	// Returns 0 for success, 1 for failure
@@ -31,7 +31,7 @@ public:
 		data = m_pData[m_pos++];
 		data <<= 8;
 		data |= m_pData[m_pos++];
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	// Returns 0 for success, 1 for failure
@@ -46,7 +46,7 @@ public:
 		data |= m_pData[m_pos++];
 		data <<= 8;
 		data |= m_pData[m_pos++];
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	// Copy bytes into the buffer
@@ -57,7 +57,7 @@ public:
 			return tos_error::ERROR_READ_EOF;
 		for (int i = 0; i < count; ++i)
 			*data++ = m_pData[m_pos++];
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	void advance(uint32_t count)
@@ -135,7 +135,7 @@ static int read_string(buffer_reader& buf, uint32_t length, std::string& str)
 		if (ch)	// Don't add any padded zero bytes
 			str += (char)ch;
 	}
-	return tos_error::TOS_OK;
+	return tos_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -178,7 +178,7 @@ static int read_debug_line_info(buffer_reader& buf, fonda::compilation_unit& cu,
 		cu.points.push_back(cp);
 		--numlines;
 	}
-	return tos_error::TOS_OK;
+	return tos_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -195,7 +195,7 @@ static int read_hcln_long(buffer_reader& buf, uint32_t& val)
 	if (tmpB)
 	{
 		val = tmpB;
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	uint16_t tmpW;
@@ -204,7 +204,7 @@ static int read_hcln_long(buffer_reader& buf, uint32_t& val)
 	if (tmpW)
 	{
 		val = tmpW; 
-		return tos_error::TOS_OK;
+		return tos_error::OK;
 	}
 
 	return buf.read_long(val);
@@ -254,7 +254,7 @@ static int read_debug_hcln_info(buffer_reader& buf, fonda::compilation_unit& cu,
 		cu.points.push_back(cp);
 		--numlines;
 	}
-	return tos_error::TOS_OK;
+	return tos_error::OK;
 }
 
 // ----------------------------------------------------------------------------
@@ -346,7 +346,7 @@ static int read_reloc(buffer_reader& buf, compilation_unit& cu)
 		// Jump to next hunk
 		buf.set_pos(hstart + hlen);
 	}
-	return tos_error::TOS_OK;
+	return tos_error::OK;
 }
 
 // ----------------------------------------------------------------------------

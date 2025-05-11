@@ -16,7 +16,7 @@ namespace tos_error
 {
 	enum
 	{
-		TOS_OK = 0,
+		OK = 0,
 		ERROR_READ_EOF = 1,					// Unable to read data before EOF
 		ERROR_HEADER_MAGIC = 2,				// Missing "ELF" signature
 		ERROR_ALLOC_FAIL = 3,				// Can't allocate file data

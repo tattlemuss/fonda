@@ -62,7 +62,7 @@ int tos_file(FILE* pFile)
 {
 	fonda::tos_results results;
 	int ret = process_tos_file(pFile, results);
-	if (ret != fonda::tos_error::TOS_OK)
+	if (ret != fonda::tos_error::OK)
 		return ret;
 
 	// Dump output
