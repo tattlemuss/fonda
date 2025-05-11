@@ -525,6 +525,10 @@ static int parse_section_debug_info(elf& elf, elf_section_int& section)
 		address_size = eread.readU8();
 		debug_abbrev_offset = eread.readU32or64(is64Bit);
 	}
+	else
+	{
+		return elf_error::ERROR_DWARF_VERSION_TOO_NEW;
+	}
 	(void) debug_abbrev_offset;
 	return elf_error::OK;
 }

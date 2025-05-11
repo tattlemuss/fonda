@@ -53,6 +53,7 @@ namespace elf_error
 		ERROR_ELF_VERSION = 3,						// Unsupported version number
 		ERROR_UNKNOWN_CLASS = 4,					// Neither LSB or MSB mode in header
 		ERROR_INVALID_SECTION = 5,					// Tried to access an invalid section number
+		ERROR_DWARF_VERSION_TOO_NEW = 6,			// DWARF version is greater than 5
 
 		ERROR_DWARF_UNKNOWN_OPCODE = 1000,			// Dwarf main opcode not recognised
 		ERROR_DWARF_UNKNOWN_EXTENDED_OPCODE = 1001,	// Dwarf extended opcode not recognised
